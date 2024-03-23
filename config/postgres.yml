@@ -1,0 +1,6 @@
+postgres:
+  host: localhost
+  port: 5433
+  dbname: blade10
+  user: user
+  password: password

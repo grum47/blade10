@@ -1,0 +1,31 @@
+version: '1'
+services:
+  postgres:
+    image: postgres:15
+    container_name: blade10_db
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=blade10
+    networks:
+      - blade10-network
+    volumes:
+      - ./src/scripts/sql/ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
+      - postgres_data:/var/lib/blade10/data
+  
+  blade10:
+    build:
+      context: .
+    container_name: blade10_app
+    networks:
+      - blade10-network
+    # command: tail -f /dev/null
+
+volumes:
+  postgres_data:
+
+networks:
+  blade10-network:
+    driver: bridge
