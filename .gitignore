@@ -1,7 +1,0 @@
-BladeVenv/*
-plane.md
-src/scripts/py/w.py
-*.cpython-310.pyc
-logs.log
-tests/
-src/scripts/py/app.py
