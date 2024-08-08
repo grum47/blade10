@@ -1,0 +1,1 @@
+select schema_name from information_schema.schemata where schema_name = '{{ params.pg_raw_schema }}';

@@ -1,0 +1,1 @@
+select distinct employer::int from {{ params.pg_raw_schema }}.vacancies v order by 1;
