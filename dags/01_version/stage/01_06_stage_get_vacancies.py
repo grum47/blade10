@@ -10,58 +10,43 @@ from airflow.utils.task_group import TaskGroup
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+# from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.telegram.operators.telegram import TelegramOperator
+# from airflow.providers.telegram.operators.telegram import TelegramOperator
 from airflow.models.baseoperator import chain
 
-from headhunter.scripts.hh_vacancies import get_vacancies_data
+from headhunter.scripts.func import get_vacancies_data
+from headhunter.scripts.func import tmp_stage_to_pg
+
 
 # logging
 log = logging.getLogger(__name__)
 
-DAG_ID = "01_05_raw_get_vacancies"
+DAG_ID = "01_06_stage_get_vacancies"
+NEXT_DAG_ID = "01_07_stage_get_employers"
+
 TG_CONN_ID = "telegram_connection"
 TG_CHAT_ID = Variable.get("TG_CHAT_ID")
+
 HH_APPNAME = Variable.get("HH_APPNAME")
 HH_LIST_TEXT_SEARCH = Variable.get("HH_LIST_TEXT_SEARCH").split(', ')
 HH_URL_VACANCIES = Variable.get("HH_URL_VACANCIES")
+HH_PATH_DF_STAGE = Variable.get("HH_PATH_DF_STAGE")
+
 PG_CONN_ID = "docker_blade10_db"
 PG_RAW_SCHEMA = Variable.get("PG_RAW_SCHEMA")
 PG_TABLE_NAME = "vacancies"
 
 
-def copy_to_pg_tmp():
-    import pandas as pd
-
-    postgres_hook = PostgresHook(postgres_conn_id=PG_CONN_ID)
-    postgres_engine = postgres_hook.get_sqlalchemy_engine()
-
-    df = pd.read_csv(f'/opt/airflow/tmp_stage/{PG_TABLE_NAME}.csv', sep=';')
-
-    df['process_dttm'] = pendulum.now('Europe/Moscow')
-
-    log.info(f" ::: df.shape = {df.shape}")
-
-    df.to_sql(
-        name=PG_TABLE_NAME,
-        con=postgres_engine,
-        schema=PG_RAW_SCHEMA,
-        if_exists='replace',
-        index=False
-        )
-    log.info(f" ::: df insert into table {PG_TABLE_NAME}")
-    return True
-
 with DAG(
     dag_id=DAG_ID,
     schedule=None,
-    start_date=pendulum.datetime(2024, 4, 22, tz="UTC"),
+    start_date=pendulum.datetime(2024, 8, 1, tz="UTC"),
     end_date=None,
     max_active_tasks=5,
     catchup=True,
     dagrun_timeout=datetime.timedelta(minutes=60),
-    tags=["raw", "star"],
+    tags=["stage", "star"],
     dag_display_name=DAG_ID,
     template_searchpath=["/opt/airflow/include/sql/hh/"],
 ) as dag:
@@ -78,7 +63,7 @@ with DAG(
     )
 
     # <--- general group --->
-    with TaskGroup(group_id="group_transform_data_vacancies") as group_transform_data_vacancies:
+    with TaskGroup(group_id="group_transform_data") as group_transform_data:
         group_list = []
         for text_search in HH_LIST_TEXT_SEARCH:
             group_id = f"group_{text_search.replace(' ', '_')}"
@@ -102,15 +87,20 @@ with DAG(
     
         chain(*group_list)
 
-    load_data_to_db = PythonOperator(
-        task_id="load_data_to_db",
-        trigger_rule="all_success",
-        python_callable=copy_to_pg_tmp,
+    load_data = PythonOperator(
+        task_id=f"load_data",
+        python_callable=tmp_stage_to_pg,
+        op_args=[PG_TABLE_NAME,],
+        op_kwargs={
+            "PG_CONN_ID": PG_CONN_ID,
+            "PG_RAW_SCHEMA": PG_RAW_SCHEMA,
+            "tmp_stage_path_df": HH_PATH_DF_STAGE + PG_TABLE_NAME + ".csv"
+        }
     )
-    
+
     trigger_next_dag = TriggerDagRunOperator(
-        task_id='trigger_01_06_raw_get_employers',
-        trigger_dag_id='01_06_raw_get_employers',
+        task_id=f'trigger_{NEXT_DAG_ID}',
+        trigger_dag_id=NEXT_DAG_ID,
         wait_for_completion=True,
     )
 
@@ -118,22 +108,12 @@ with DAG(
         task_id="stop"
     )
 
-    send_tg = TelegramOperator(
-        task_id="send_message_telegram",
-        telegram_conn_id=TG_CONN_ID,
-        chat_id=TG_CHAT_ID,
-        text=f"""Данные по по вакансиям за {{{{ macros.ds_add(ds, -1) }}}} загружены""",
-    )
-
 # pipline
 (
     start
     >> get_area_parents_id
-    >> group_transform_data_vacancies
-    >> load_data_to_db
+    >> group_transform_data
+    >> load_data
     >> trigger_next_dag
     >> stop
-    >> send_tg
 )
-
-# sql="COPY blade.{report} FROM '/opt/airflow/tmp_stage/vacancies.csv' DELIMITER ';' CSV HEADER"

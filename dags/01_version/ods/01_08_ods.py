@@ -8,28 +8,32 @@ from airflow.models.dag import DAG
 from airflow.models import Variable
 from airflow.utils.task_group import TaskGroup
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import get_current_context
+# from airflow.operators.python import get_current_context
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.telegram.operators.telegram import TelegramOperator
-from airflow.models.baseoperator import chain
+# from airflow.providers.telegram.operators.telegram import TelegramOperator
+# from airflow.models.baseoperator import chain
 
 
 # logging
 log = logging.getLogger(__name__)
 
-DAG_ID = "01_07_clean_process_tables"
+DAG_ID = "01_08_ods"
+NEXT_DAG_ID = "01_09_dds"
+
 TG_CONN_ID = "telegram_connection"
 TG_CHAT_ID = Variable.get("TG_CHAT_ID")
+
 PG_CONN_ID = "docker_blade10_db"
 PG_RAW_SCHEMA = Variable.get("PG_RAW_SCHEMA")
 PG_CLEAN_SCHEMA = Variable.get("PG_CLEAN_SCHEMA")
-HH_LIST_CLEAN_OTHER_TABLES = [[x] for x in Variable.get("HH_LIST_CLEAN_OTHER_TABLES").split(', ')]
 
+HH_LIST_CLEAN_OTHER_TABLES = [[x] for x in Variable.get("HH_LIST_CLEAN_OTHER_TABLES").split(', ')]
 
 with DAG(
     dag_id=DAG_ID,
     schedule=None,
-    start_date=pendulum.datetime(2024, 4, 22, tz="UTC"),
+    start_date=pendulum.datetime(2024, 8, 1, tz="UTC"),
     end_date=None,
     max_active_tasks=50,
     max_active_runs=1,
@@ -68,11 +72,11 @@ with DAG(
                     }
             ).expand(parameters=get_list_all_tables.output)
         
-        # <--- areas_table --->
-        with TaskGroup(group_id="areas_table") as areas_table:
+        # <--- other_tables --->
+        with TaskGroup(group_id="other_tables") as other_tables:
 
-            process_areas_table = PostgresOperator.partial(
-                task_id="process_areas_table",
+            process_other_tables = PostgresOperator.partial(
+                task_id="process_other_tables",
                 postgres_conn_id=PG_CONN_ID,
                 map_index_template="table processed: {{ task.sql[0].split('.')[1].split(';')[0] }}",
                 params={
@@ -83,16 +87,14 @@ with DAG(
                 sql=HH_LIST_CLEAN_OTHER_TABLES
                 )
 
-
+    trigger_next_dag = TriggerDagRunOperator(
+        task_id=f'trigger_{NEXT_DAG_ID}',
+        trigger_dag_id=NEXT_DAG_ID,
+        wait_for_completion=True,
+    )
     stop = EmptyOperator(
         task_id="stop",
-    )
-
-    send_tg = TelegramOperator(
-        task_id="send_message_telegram",
-        telegram_conn_id=TG_CONN_ID,
-        chat_id=TG_CHAT_ID,
-        text=f"""Таблицы сырого слоя обоработаны {{{{ macros.ds_add(ds, -1) }}}}""",
+        trigger_rule='all_done'
     )
 
 # pipline
@@ -101,5 +103,4 @@ with DAG(
     >> get_list_all_tables
     >> processed_tables
     >> stop
-    >> send_tg
 )
