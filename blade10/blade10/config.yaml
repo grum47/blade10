@@ -1,0 +1,36 @@
+version: 0.0.1
+logger:
+  level: INFO
+
+
+hh_api:
+  base_url: https://api.hh.ru/
+  headers: {"User-Agent": "hh-recommender"}
+
+  endpoints:
+    vacancies: vacancies
+    employers: employers
+    
+
+  search:
+    - BI Developer
+    - Business Development Manager
+    - Data Analyst
+    - Data Engineer
+    - Data Science
+    - Data Scientist
+    - ML Engineer
+    - Machine Learning Engineer
+    - ML OPS инженер
+    - ML-разработчик
+    - Machine Learning
+    - Python Developer
+    - Web Analyst
+    - Аналитик данных
+    - Бизнес-аналитик
+    - Веб-аналитик
+    - Системный аналитик
+    - Финансовый аналитик
+    - ETL
+    - дата инженер
+    - инженер данных
