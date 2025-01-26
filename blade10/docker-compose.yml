@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: blade10
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  blade10:
+    build: .
+    volumes:
+      - ./blade10:/usr/src/blade10
