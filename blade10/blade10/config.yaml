@@ -7,14 +7,28 @@ hh_api:
   base_url: https://api.hh.ru/
   headers: {"User-Agent": "hh-recommender"}
 
+# Endpoint entities with a simple structure:s areas, dictionaries, metro, professional_roles
   endpoints:
-    dictionaries: 
+    simple_processing:
       - areas
-      - dictionaries
+      - dictionaries:
+        - education_level
+        - employer_type
+        - employment
+        - experience
+        - language_level
+        - messaging_status
+        - preferred_contact_type
+        - schedule
+        - vacancy_type
+        - working_days
+        - working_time_intervals
+        - working_time_modes
       - metro
       - professional_roles
-    vacancies: vacancies
-    employers: employers
+    complex_processing:
+      vacancies: vacancies
+      employers: employers
     
 
   search:
