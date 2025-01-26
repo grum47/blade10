@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS blade_dds.employers (
     dwh_id serial PRIMARY KEY, 
-    employer_id text, 
+    employer_id bigint, 
     employer_name text, 
     employer_type text, 
     site_url text, 
@@ -68,18 +68,14 @@ and  		md5(
 			coalesce(ods.employer_name::text, '') ||
             coalesce(ods.employer_type::text, '') ||
             coalesce(ods.site_url::text, '') ||
-            coalesce(ods.vacancies_url::text, '') ||
-            coalesce(ods.city_id::text, '') ||
-            coalesce(ods.open_vacancies::text, '')
+            coalesce(ods.city_id::text, '')
 			) != md5(
 					'' ||
 					coalesce(dds.employer_id::text, '') ||
                     coalesce(dds.employer_name::text, '') ||
                     coalesce(dds.employer_type::text, '') ||
                     coalesce(dds.site_url::text, '') ||
-                    coalesce(dds.vacancies_url::text, '') ||
-                    coalesce(dds.city_id::text, '') ||
-                    coalesce(dds.open_vacancies::text, '')
+                    coalesce(dds.city_id::text, '')
 					)
 ) as sbq
 WHERE blade_dds.employers.dwh_id=sbq.dwh_id;
@@ -109,4 +105,5 @@ from 		blade_ods.employers ods
 full join	blade_dds.employers dds
 on			ods.employer_id = dds.employer_id
 where 		1=1
-and 		dds.md_dwh_is_activ = 0;
+and 		dds.md_dwh_is_activ = 0
+and         ods.md_ins_date is not null;

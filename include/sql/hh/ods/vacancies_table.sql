@@ -22,7 +22,7 @@ with SBQ as
 			, v.languages as language_id
 			, v.languages_level as language_level_id
 			, v.approved
-			, string_to_array(trim(both '[]' from v.key_skills), ', ') as key_skills
+			, string_to_array(replace(trim(both '{}' from v.key_skills), '"', ''), ',')::text[] as key_skills
 			, initial_created_at::date as md_ins_date
 			, published_at::date as md_upd_date
 			, 1 as md_is_activ
@@ -33,13 +33,13 @@ with SBQ as
 	on		v."area" = a.id 
 	order by 1
 )
-select  vacancy_id
-			, city_id
-			, country_id
-			, professional_role_id
-			, employer_id
-			, metro_line_id
-			, metro_station_id
+select  vacancy_id::bigint
+			, city_id::int
+			, country_id::int
+			, professional_role_id::int
+			, employer_id::bigint
+			, metro_line_id::int
+			, metro_station_id::int
 			, salary_from 
 			, salary_to 
 			, vacancy_name

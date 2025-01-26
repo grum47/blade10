@@ -32,6 +32,36 @@ CREATE TABLE IF NOT EXISTS blade_dds.vacancies (
     );
 
 -- (1)
+insert into blade_dds.vacancies (
+vacancy_id,
+city_id, 
+country_id,
+professional_role_id,
+employer_id,
+metro_line_id,
+metro_station_id,
+salary_from,
+salary_to,
+vacancy_name,
+vacancy_type_id,
+experience_id,
+schedule_id,
+employmenr_id,
+working_days_id,
+working_time_intervals_id,
+working_time_modes_id,
+language_id,
+language_level_id,
+approved,
+key_skills,
+md_ins_date,
+md_upd_date,
+md_is_activ,
+md_is_delete,
+md_dwh_is_activ,
+md_dwh_date_from,
+md_dwh_date_to,
+md_dwh_status)
 select 		ods.vacancy_id 
 			, ods.city_id 
 			, ods.country_id 
@@ -107,11 +137,7 @@ and  		md5(
 			coalesce(ods.language_id::text, '') ||
 			coalesce(ods.language_level_id::text, '') ||
 			coalesce(ods.approved::text, '') ||
-			coalesce(ods.key_skills::text, '') ||
-			coalesce(ods.md_ins_date::text, '')||
-			coalesce(ods.md_upd_date::text, '') ||
-			coalesce(ods.md_is_activ::text, '') ||
-			coalesce(ods.md_is_delete::text, '')
+			coalesce(ods.key_skills::text, '')
 			) != md5(
 					'' ||
 					coalesce(dds.city_id::text, '') ||
@@ -133,11 +159,7 @@ and  		md5(
 					coalesce(dds.language_id::text, '') ||
 					coalesce(dds.language_level_id::text, '') ||
 					coalesce(dds.approved::text, '') ||
-					coalesce(dds.key_skills::text, '') ||
-					coalesce(dds.md_ins_date::text, '') ||
-					coalesce(dds.md_upd_date::text, '') ||
-					coalesce(dds.md_is_activ::text, '') ||
-					coalesce(dds.md_is_delete::text, '')
+					coalesce(dds.key_skills::text, '')
 					)
 ) as sbq
 WHERE blade_dds.vacancies.dwh_id=sbq.dwh_id;
@@ -208,3 +230,14 @@ select 		ods.vacancy_id
 	where 		1=1
 	and 		ods.vacancy_id is not null
 	and 		dds.md_dwh_is_activ = 0;
+
+-- костыль чтобы не переполнялась таблица
+delete from blade10.blade_dds.vacancies 
+where dwh_id not in(
+select dwh_id_not_del from
+(select  vacancy_id 
+		, md_dwh_is_activ 
+		, max(dwh_id) as dwh_id_not_del
+from 	blade10.blade_dds.vacancies v 
+group by 1,2) as foo
+);

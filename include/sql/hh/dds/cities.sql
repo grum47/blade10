@@ -31,7 +31,7 @@ select 		ods.city_id
 			, 'I' as md_dwh_status
 from 		blade10.blade_ods.cities ods
 full join	blade10.blade_dds.cities dds
-on			ods.city_id = dds.city_id
+on			ods.city_id::int = dds.city_id::int
 where 		1=1 
 and 		dds.dwh_id is null;
 
@@ -47,7 +47,7 @@ select 		dds.dwh_id
 			, 0 as md_dwh_is_activ
 from 		blade_ods.cities ods
 full join	blade_dds.cities dds
-on			ods.city_id = dds.city_id
+on			ods.city_id::int = dds.city_id::int
 where 		1=1
 and 		dds.md_dwh_is_activ = 1
 and			dds.md_dwh_status != 'D' 	
@@ -83,6 +83,6 @@ select 		ods.city_id
 			, 'U' as md_dwh_status 
 from 		blade_ods.cities ods
 full join	blade_dds.cities dds
-on			ods.city_id = dds.city_id
+on			ods.city_id::int = dds.city_id::int
 where 		1=1
 and 		dds.md_dwh_is_activ = 0;

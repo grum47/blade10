@@ -1,0 +1,1 @@
+truncate {{ params.pg_raw_schema }}.{{ task.parameters[0] }};

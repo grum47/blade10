@@ -1,10 +1,6 @@
 import json
 import pandas as pd
 
-from omegaconf import OmegaConf
-
-
-conf_hh = OmegaConf.load('/opt/airflow/config/hh.yml')
 
 def transform_data_areas(data):
     data = json.loads(data)
