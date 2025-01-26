@@ -8,6 +8,11 @@ hh_api:
   headers: {"User-Agent": "hh-recommender"}
 
   endpoints:
+    dictionaries: 
+      - areas
+      - dictionaries
+      - metro
+      - professional_roles
     vacancies: vacancies
     employers: employers
     
