@@ -1,3 +1,7 @@
 tests
 *.log
 __pycache__
+*.json
+*.txt
+*.parquet
+blade10Venv/
