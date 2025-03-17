@@ -1,3 +1,5 @@
+#!/home/blade10/blade10/blade10/blade10Venv/bin/python3
+
 import os
 import yaml
 import json
@@ -202,6 +204,7 @@ def get_vacancies_url_to_txt(
 
                             response = requests.get(url, params=params, headers=headers)
                             get_url_from_first_json_vacancies(response.text, file_path=file_path_from_urls + "/urls.txt")
+                            time.sleep(random.randint(33, 35) / 100)
                     else:
                         get_url_from_first_json_vacancies(response.text, file_path=file_path_from_urls + "/urls.txt")
                 time.sleep(random.randint(33, 35) / 100)

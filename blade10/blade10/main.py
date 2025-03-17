@@ -1,3 +1,5 @@
+#!/home/blade10/blade10/blade10/blade10Venv/bin/python3
+
 from datetime import (
     datetime,
     date,
@@ -23,6 +25,12 @@ from data_fetcher import (
     get_data_employers_api2json,
     transform_employer_data_json2parquete
 )
+
+from data_transfer import (
+    find_parquete_files,
+    transfer_data_parquete_to_clickhouse
+)
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -105,6 +113,15 @@ def main():
 
     transform_employer_data_json2parquete(data_folder_path + endpoint)
 
+    transfer_files_list = find_parquete_files('blade10/blade10/blade10/data')
+
+    transfer_data_parquete_to_clickhouse(
+        file_paths=transfer_files_list,
+        db_name='blade10',
+        host='10.8.0.14',
+        user='blade10',
+        password='blade10'
+    )
 
 if __name__ == "__main__":
     start = time.monotonic_ns()
