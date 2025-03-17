@@ -113,11 +113,12 @@ def main():
 
     transform_employer_data_json2parquete(data_folder_path + endpoint)
 
+    # stage raw data to ClickHouse
     transfer_files_list = find_parquete_files('blade10/blade10/blade10/data')
 
     transfer_data_parquete_to_clickhouse(
         file_paths=transfer_files_list,
-        db_name='blade10',
+        db_name='blade10_raw',
         host='10.8.0.14',
         user='blade10',
         password='blade10'

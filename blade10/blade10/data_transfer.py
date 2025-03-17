@@ -27,13 +27,13 @@ def transfer_data_parquete_to_clickhouse(
     
     for path in file_paths:
         try:
-            table_name = path.split('.')[0].split('/')[-1]
+            table_name = path.split('.')[-2].split('/')[-1]
             df = pd.read_parquet(path)
             columns = df.columns
             types = df.dtypes
             
             # Создание SQL запроса на создание таблицы
-            create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ("
+            create_table_query = f"CREATE TABLE IF NOT EXISTS {db_name}.{table_name} ("
             for col, col_type in zip(columns, types):
                 if col_type == 'int64':
                     create_table_query += f"{col} UInt64,"
@@ -43,13 +43,20 @@ def transfer_data_parquete_to_clickhouse(
                     create_table_query += f"{col} String,"
                 elif col_type == 'bool':
                     create_table_query += f"{col} UInt8,"
+                elif col_type == 'datetime64[us]':
+                    df[col] = df[col].astype('str')
+                    create_table_query += f"{col} String,"
                 else:
                     create_table_query += f"{col} String,"  # По умолчанию для неизвестных типов
             create_table_query = create_table_query.rstrip(',') + ") ENGINE = MergeTree() ORDER BY tuple();"
 
             client.execute(create_table_query)
             
-            client.insert_dataframe(f'INSERT INTO {table_name} VALUES', df)
+            client.insert_dataframe(
+                f'INSERT INTO {db_name}.{table_name} VALUES',
+                df,
+                settings=dict(use_numpy=True)
+            )
             
             print(f"Файл {path} успешно обработан и данные записаны в таблицу {table_name}.")
         
