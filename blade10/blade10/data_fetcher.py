@@ -16,7 +16,22 @@ from datetime import (
 )
 from typing import Dict, Any, List
 
-log = logging.getLogger(__name__)
+
+def blade10_log(message: str, type: str = 'info') -> bool():
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        level=logging.INFO,
+        filename="blade10/blade10/blade10/blade10.log",
+        filemode="w",
+        format="%(asctime)s %(levelname)s ::::: %(message)s ::::: "
+        )
+    
+    if type == 'error':
+        logger.error(message)
+    else:
+        logger.info(message)
+    
+    return True
 
 
 def get_data_simple_processing__api2json(
@@ -62,6 +77,7 @@ def add_metadata_and_save_to_parquet(
     output_df = input_df
     output_df['process_dttm'] = datetime.now()
     output_df.drop_duplicates(inplace=True)
+    blade10_log(f"Drop Duplicates success")
 
     output_file_path = output_file_path
     output_df.to_parquet(output_file_path, index=False)
@@ -166,7 +182,7 @@ def get_vacancies_url_to_txt(
         ) -> bool:
     
     url = base_url + endpoint
-    print(url)
+    blade10_log(url)
 
     params = {
         'date_from': search_date,
@@ -175,15 +191,15 @@ def get_vacancies_url_to_txt(
         'search_field': 'name',
     }
 
-    print(f" ::::: {params}")
+    blade10_log(f"HH api params: {params}")
 
     for search_text in search_text_list:
         
         params['text'] = search_text
 
-        print(f"search text: {search_text}")
+        blade10_log(f"search text: {search_text}")
         file_path_from_urls = f"{file_path}/{search_text}"
-        print(file_path_from_urls)
+        blade10_log(file_path_from_urls)
 
         check_folder_exists(file_path_from_urls)
 
@@ -191,15 +207,16 @@ def get_vacancies_url_to_txt(
             params['area'] = int(areas_parent_id)
 
             response = requests.get(url, params=params, headers=headers)
+            blade10_log(f"Url requests: {response.url}")
 
             try:
                 data = json.loads(response.text)
-                print(f" ::::: area: {areas_parent_id}, data.found: {data['found']}, date.pages: {data['pages']}, data.items: {len(data['items'])}")
+                blade10_log(f" ::::: area: {areas_parent_id}, data.found: {data['found']}, date.pages: {data['pages']}, data.items: {len(data['items'])}")
 
                 if data['found'] != 0:
                     if data['pages'] > 1:
                         for page in range(1, data['pages'] + 1, 1):
-                            print(f" ::::: page process: {page}")
+                            # blade10_log(f" ::::: page process: {page}")
                             params['page'] = page
 
                             response = requests.get(url, params=params, headers=headers)
@@ -209,17 +226,15 @@ def get_vacancies_url_to_txt(
                         get_url_from_first_json_vacancies(response.text, file_path=file_path_from_urls + "/urls.txt")
                 time.sleep(random.randint(33, 35) / 100)
             except Exception as error:
-                log.error(error)
+                blade10_log(data)
+                blade10_log(error, 'error')
 
     return True
 
 def get_data_vacancies_url_to_json(folder_path, headers):    
     file_with_urls = get_all_files_in_subfolders(folder_path)
-    print(file_with_urls)
-
     for file in file_with_urls:
         if file.endswith("urls.txt"):
-            print(file)
 
             # Читаем построчно файл с url
             with open(file) as file:
@@ -227,7 +242,7 @@ def get_data_vacancies_url_to_json(folder_path, headers):
 
                 for line in lines:
                     vacancie_url = line
-                    print(vacancie_url)
+                    # blade10_log(vacancie_url)
                     vacancie_id = line.split("?")[0].split("/")[-1]
 
                     vacancie_response = requests.get(vacancie_url, headers=headers)
@@ -239,6 +254,8 @@ def get_data_vacancies_url_to_json(folder_path, headers):
                         json.dump(vacancie_data, f, ensure_ascii=False, indent=4)
                     vacancie_response.close()
                     time.sleep(random.randint(33, 35) / 100)
+                    blade10_log(f"Line {line} success")
+            blade10_log(f"File {file} to json success")
 
     return True
 
@@ -373,7 +390,7 @@ def get_data_employers_api2json(
     
     for employer_id in process_id_list:
         url_employer = f"{url}/{str(employer_id)}"
-        print(f" ::: processed url :{url_employer}")
+        blade10_log(f"Processed url :{url_employer}")
 
         response = requests.get(url_employer, headers=headers)
         data = json.loads(response.text)
@@ -395,7 +412,7 @@ def check_folder_exists(path_folder):
     if not os.path.exists(path_folder):
         os.makedirs(path_folder)
     else:
-        print(f"Folder {path_folder} is exists")
+        blade10_log(f"Folder {path_folder} is exists")
 
 
 # def find_url_files(folder_path: str) -> List:
@@ -525,7 +542,10 @@ def get_vacancies_data_json2parquete(folder_path: str) -> str:
                 'approved': approved_list
             })
 
+
             df = pd.concat([df, tmp_df])
+    
+    df['approved'] = df['approved'].astype('str')
 
     output_file_path = f"{folder_path}/vacancie.parquet"
     add_metadata_and_save_to_parquet(
@@ -541,7 +561,7 @@ def transform_employer_data_json2parquete(folder_path: str) -> str:
     employers_files = get_all_files_in_subfolders(folder_path)
 
     df = pd.DataFrame()
-    print(employers_files)
+    blade10_log(employers_files)
 
     for employers_file_path in employers_files:
         if employers_file_path.endswith('.json'):

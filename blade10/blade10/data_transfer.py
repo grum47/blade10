@@ -64,3 +64,29 @@ def transfer_data_parquete_to_clickhouse(
             print(f"Ошибка при обработке файла {path}: {e}")
     
     return True
+
+
+def search_ip():
+
+    import subprocess
+    import re
+
+    ip_list = []
+
+    # Подсеть, в которой нужно искать устройства
+    subnet = "10.8.0.0/24"
+
+    # Выполняем сканирование
+    try:
+        result = subprocess.run(['nmap', '-sn', subnet], capture_output=True, text=True, check=True)
+        # Ищем IP-адреса с помощью регулярного выражения
+        ip_addresses = re.findall(r'Nmap scan report for ([\d\.]+)', result.stdout)
+
+        # Выводим найденные IP-адреса
+        for ip in ip_addresses:
+            ip_list.append(ip)
+
+    except subprocess.CalledProcessError as e:
+        print(f"Ошибка при выполнении nmap: {e}")
+
+    return ip_list
